@@ -1,0 +1,5 @@
+{
+  "name": "Sleeper League Dashboard Pro",
+  "description": "A high-fidelity fantasy football league dashboard utilizing Sleeper APIs with AI-powered league insights provided by Gemini.",
+  "requestFramePermissions": []
+}
