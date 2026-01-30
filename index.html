@@ -1,18 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FWL 2025 | Dashboard Oficial</title>
+    <title>FWL 2026 | Dashboard Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+      /* Aplica a densidade visual de 75% como padrão do App */
+      html {
+        font-size: 85%; /* Redução base para elementos rem */
+      }
+      
       body {
         background-color: #0a0f1d;
         color: #f8fafc;
         font-family: 'Inter', sans-serif;
+        zoom: 0.85; /* Ajuste global de escala (suportado na maioria dos browsers modernos) */
       }
+
+      /* Fallback para navegadores que não suportam zoom (opcional, mas font-size já ajuda) */
+      @media screen and (min-width: 1920px) {
+        body {
+          zoom: 0.75;
+        }
+      }
+
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }

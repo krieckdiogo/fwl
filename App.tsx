@@ -8,24 +8,17 @@ import CommissionerArea from './components/CommissionerArea';
 import BradyBowlPage from './components/BradyBowlPage';
 import DivisionalLeaguePage from './components/DivisionalLeaguePage';
 import GlobalRanking2025 from './components/GlobalRanking2025';
+import BradyGeneralPlayoffs from './components/BradyGeneralPlayoffs';
+import SleeperLeaguePage from './components/SleeperLeaguePage';
+import RegulationPage from './components/RegulationPage';
+import HallOfFame from './components/HallOfFame';
 import { fetchLeagueData, fetchLeagueInfo } from './services/sleeper';
 import { League } from './types';
 
-// IDs OFICIAIS DA BRADY BOWL
+// IDs OFICIAIS DA BRADY BOWL (21 Ligas Consolidadas)
 export const FWL_BRADY_IDS = [
   '1232712391108612096', // Atlanta
-  '1312531415799205888'  // Baltimore
-];
-
-// ID DA LIGA ALABAMA (Divisional)
-export const ALABAMA_ID = '1204159865153388544';
-
-// LISTA OFICIAL DE IDS
-export const FWL_OFFICIAL_IDS = [
-  ...FWL_BRADY_IDS,
-  '1204160977872883712',
-  ALABAMA_ID,
-  '1227148843859062784',
+  '1227148843859062784', // Baltimore (ID CORRIGIDO)
   '1208790166441840640',
   '1208794512017600512',
   '1232712789961752576',
@@ -42,16 +35,42 @@ export const FWL_OFFICIAL_IDS = [
   '1232707452298870784',
   '1232711908889473024',
   '1208789644955615232',
-  '1208795273556398080'
+  '1208795273556398080',
+  '1232706687903727616',
+  '1232711487856844800'
+];
+
+// ID DA LIGA ALABAMA (Divisional)
+export const ALABAMA_ID = '1204159865153388544';
+
+// LISTA TOTAL CONSOLIDADA PARA O DASHBOARD/RANKING + LIGA ID 12
+export const FWL_OFFICIAL_IDS = [
+  ...FWL_BRADY_IDS,
+  '1204160977872883712',
+  '12',
+  ALABAMA_ID
 ];
 
 export const FWL_LEAGUES: { id: string, name: string, type: 'brady' | 'divisional' }[] = FWL_OFFICIAL_IDS.map((id, index) => {
   const isBrady = FWL_BRADY_IDS.includes(id);
+  let name = '';
+  
+  if (id === '12') {
+    name = 'Liga de Teste (ID 12)';
+    return { id, name, type: 'divisional' };
+  }
+
+  if (isBrady) {
+    if (id === FWL_BRADY_IDS[0]) name = 'FWL 2025 - Brady Bowl (Atlanta)';
+    else if (id === FWL_BRADY_IDS[1]) name = 'FWL 2025 - Brady Bowl (Baltimore)';
+    else name = `FWL 2025 - Brady Bowl (Division ${index + 1})`;
+  } else {
+    name = `FWL 2025 - Divisional D${index - FWL_BRADY_IDS.length + 1}`;
+  }
+
   return {
     id,
-    name: isBrady 
-      ? `FWL 2025 - Brady Bowl (${id === FWL_BRADY_IDS[0] ? 'Atlanta' : 'Baltimore'})` 
-      : `FWL 2025 - Divisional D${index - FWL_BRADY_IDS.length + 1}`,
+    name,
     type: isBrady ? 'brady' : 'divisional' as const
   };
 });
@@ -63,7 +82,7 @@ const DIVISIONAL_LOGO_SOURCE_ID = '1312539231599472640';
 const RANKING_SOURCE_LEAGUE_ID = '1314010987120066560';
 const FINALS_LEAGUE_ID = FWL_BRADY_IDS[0];
 
-type ViewState = 'landing' | 'dashboard' | 'playoffs' | 'registration' | 'admin' | 'brady-list' | 'divisional-list' | 'ranking-global';
+type ViewState = 'landing' | 'dashboard' | 'playoffs' | 'registration' | 'admin' | 'brady-list' | 'divisional-list' | 'ranking-global' | 'brady-playoffs-geral' | 'league-lookup' | 'regulation' | 'hall-of-fame';
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<ViewState[]>(['landing']);
@@ -74,7 +93,8 @@ const App: React.FC = () => {
   const [atlantaLeagueAvatar, setAtlantaLeagueAvatar] = useState<string | null>(null);
   const [playoffsChallengeAvatar, setPlayoffsChallengeAvatar] = useState<string | null>(null);
   const [divisionalLeagueAvatar, setDivisionalLeagueAvatar] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // O App não bloqueia mais a renderização inicial para carregar logos
+  const [isAssetsLoading, setIsAssetsLoading] = useState(true);
 
   const currentView = history[history.length - 1];
 
@@ -98,7 +118,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const loadIdentity = async () => {
-      setLoading(true);
       try {
         const [logoLeagueData, atlantaInfo, playoffsInfo, divisionalInfo, regulationData, rankingData] = await Promise.all([
           fetchLeagueInfo(FWL_LOGO_SOURCE_ID).catch(() => null),
@@ -130,55 +149,59 @@ const App: React.FC = () => {
           }
         }
       } finally {
-        setLoading(false);
+        setIsAssetsLoading(false);
       }
     };
     loadIdentity();
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0f1d] space-y-6 text-center">
-        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-        <div>
-          <h2 className="text-white font-black text-xl uppercase tracking-[0.3em] italic">FWL 2025</h2>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">Carregando Configurações Oficiais</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleSelectLeague = (id: string) => {
     setSelectedLeagueId(id);
     pushView('dashboard');
   };
 
-  if (currentView === 'playoffs') return <BradyPlayoffs leagues={leaguesData} onBack={popView} />;
-  if (currentView === 'dashboard' && selectedLeagueId) return <Dashboard leagueId={selectedLeagueId} onBack={popView} />;
-  if (currentView === 'registration') return <RegistrationPage onBack={popView} onAdmin={() => pushView('admin')} />;
-  if (currentView === 'admin') return <CommissionerArea onBack={popView} />;
-  if (currentView === 'brady-list') return <BradyBowlPage onBack={popView} onSelectLeague={handleSelectLeague} />;
-  if (currentView === 'divisional-list') return <DivisionalLeaguePage onBack={popView} onSelectLeague={handleSelectLeague} />;
-  if (currentView === 'ranking-global') return <GlobalRanking2025 onBack={popView} />;
+  const handleLookupLeague = (id: string) => {
+    setSelectedLeagueId(id);
+    pushView('league-lookup');
+  };
 
   return (
-    <LandingPage 
-      leagues={leaguesData.map(l => ({ id: l.league_id, name: l.name, avatar: l.avatar }))} 
-      onSelect={handleSelectLeague}
-      onOpenPlayoffs={() => pushView('playoffs')}
-      onOpenRegistration={() => pushView('registration')}
-      onOpenBradyBowl={() => pushView('brady-list')}
-      onOpenDivisionalLeague={() => pushView('divisional-list')}
-      onOpenRanking={() => pushView('ranking-global')}
-      fwlLogoAvatar={fwlLogoAvatar}
-      atlantaLeagueAvatar={atlantaLeagueAvatar}
-      playoffsChallengeAvatar={playoffsChallengeAvatar}
-      divisionalLeagueAvatar={divisionalLeagueAvatar}
-      rankingIconAvatar={rankingIconAvatar}
-      finalsLogoAvatar={null}
-      finalsLeagueId={FINALS_LEAGUE_ID}
-      regulationIconAvatar={regulationIconAvatar}
-    />
+    <>
+      {currentView === 'playoffs' && <BradyPlayoffs leagues={leaguesData.filter(l => FWL_BRADY_IDS.includes(l.league_id))} onBack={popView} />}
+      {currentView === 'dashboard' && selectedLeagueId && <Dashboard leagueId={selectedLeagueId} onBack={popView} />}
+      {currentView === 'registration' && <RegistrationPage onBack={popView} onAdmin={() => pushView('admin')} />}
+      {currentView === 'admin' && <CommissionerArea onBack={popView} />}
+      {currentView === 'brady-list' && <BradyBowlPage onBack={popView} onSelectLeague={handleSelectLeague} onOpenGeneralPlayoffs={() => pushView('brady-playoffs-geral')} />}
+      {currentView === 'divisional-list' && <DivisionalLeaguePage onBack={popView} onSelectLeague={handleSelectLeague} />}
+      {currentView === 'ranking-global' && <GlobalRanking2025 onBack={popView} />}
+      {currentView === 'brady-playoffs-geral' && <BradyGeneralPlayoffs onBack={popView} />}
+      {currentView === 'league-lookup' && selectedLeagueId && <SleeperLeaguePage leagueId={selectedLeagueId} onBack={popView} />}
+      {currentView === 'regulation' && <RegulationPage onBack={popView} />}
+      {currentView === 'hall-of-fame' && <HallOfFame onBack={popView} />}
+
+      {currentView === 'landing' && (
+        <LandingPage 
+          leagues={leaguesData.map(l => ({ id: l.league_id, name: l.name, avatar: l.avatar }))} 
+          onSelect={handleSelectLeague}
+          onOpenPlayoffs={() => pushView('playoffs')}
+          onOpenRegistration={() => pushView('registration')}
+          onOpenBradyBowl={() => pushView('brady-list')}
+          onOpenDivisionalLeague={() => pushView('divisional-list')}
+          onOpenRanking={() => pushView('ranking-global')}
+          onOpenRegulation={() => pushView('regulation')}
+          onOpenHallOfFame={() => pushView('hall-of-fame')}
+          onLookupLeague={handleLookupLeague}
+          fwlLogoAvatar={fwlLogoAvatar}
+          atlantaLeagueAvatar={atlantaLeagueAvatar}
+          playoffsChallengeAvatar={playoffsChallengeAvatar}
+          divisionalLeagueAvatar={divisionalLeagueAvatar}
+          rankingIconAvatar={rankingIconAvatar}
+          finalsLogoAvatar={null}
+          finalsLeagueId={FINALS_LEAGUE_ID}
+          regulationIconAvatar={regulationIconAvatar}
+        />
+      )}
+    </>
   );
 };
 
